@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UNISON — Chart Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:     #08080f;
+  --bg2:    #0f0f1c;
+  --bg3:    #181828;
+  --border: rgba(255,255,255,0.07);
+  --text:   #e4e4f0;
+  --muted:  #5a5a7a;
+  --dim:    #2a2a42;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+
+/* ── PASSWORD GATE ── */
+#gate {
+  position: fixed;
+  inset: 0;
+  background: #08080f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+.gate-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+.gate-logo {
+  font-family: 'Space Mono', monospace;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 7px;
+  background: linear-gradient(120deg, #a78bfa, #2dd4bf);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.gate-input-row {
+  display: flex;
+  gap: 0;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  overflow: hidden;
+}
+#gate-input {
+  background: #0f0f1c;
+  border: none;
+  outline: none;
+  color: #e4e4f0;
+  font-family: 'Space Mono', monospace;
+  font-size: 14px;
+  letter-spacing: 2px;
+  padding: 12px 18px;
+  width: 220px;
+}
+#gate-input::placeholder { color: #2a2a42; letter-spacing: 1px; }
+#gate-btn {
+  background: #181828;
+  border: none;
+  border-left: 1px solid rgba(255,255,255,0.07);
+  color: #a78bfa;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+#gate-btn:hover { background: #1f1f38; color: #c4b5fd; }
+#gate-err {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: #f43f5e;
+  opacity: 0;
+  transition: opacity 0.2s;
+  height: 14px;
+}
+#gate-err.show { opacity: 1; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── HEADER ── */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px 40px;
+  border-bottom: 1px solid var(--border);
+}
+.logo {
+  font-family: 'Space Mono', monospace;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 7px;
+  background: linear-gradient(120deg, #a78bfa, #2dd4bf);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.header-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  font-family: 'Space Mono', monospace;
+  letter-spacing: 2px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.live-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #22c55e;
+  animation: blink 2.4s ease-in-out infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+/* ── CONTROLS ── */
+.controls {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 44px 40px 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 36px;
+}
+.mode-display {
+  text-align: center;
+  min-height: 90px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.mode-name {
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  transition: color 0.35s ease;
+}
+.mode-desc {
+  font-size: 14px;
+  color: var(--muted);
+  max-width: 500px;
+  line-height: 1.65;
+}
+.dial-wrap { width: 100%; max-width: 780px; }
+.dial-track-area {
+  position: relative;
+  height: 48px;
+  cursor: pointer;
+  user-select: none;
+}
+.track-line {
+  position: absolute;
+  top: 50%; left: 0; right: 0;
+  height: 3px;
+  background: var(--bg3);
+  border-radius: 2px;
+  transform: translateY(-50%);
+}
+.track-fill {
+  position: absolute;
+  top: 50%; left: 0;
+  height: 3px;
+  border-radius: 2px;
+  transform: translateY(-50%);
+  background: linear-gradient(90deg, #f43f5e 0%, #a78bfa 50%, #2dd4bf 100%);
+  width: 0;
+  transition: width 0.05s linear;
+  pointer-events: none;
+}
+.tick {
+  position: absolute;
+  top: 50%;
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--dim);
+  border: 2px solid var(--bg3);
+  transform: translate(-50%, -50%);
+  transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
+  pointer-events: none;
+}
+.tick.reached { background: var(--bg3); border-color: var(--muted); }
+.tick.active  { background: #a78bfa; border-color: #a78bfa; box-shadow: 0 0 10px #a78bfa88; }
+.knob {
+  position: absolute;
+  top: 50%;
+  width: 36px; height: 36px;
+  background: radial-gradient(circle at 35% 35%, #2d2d50, #0f0f20);
+  border: 2px solid #a78bfa;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  cursor: grab;
+  box-shadow: 0 0 14px #a78bfa44, 0 2px 8px rgba(0,0,0,0.5);
+  transition: box-shadow 0.2s, border-color 0.2s;
+  z-index: 2;
+}
+.knob:active { cursor: grabbing; }
+.knob.dragging { box-shadow: 0 0 24px #a78bfaaa; border-color: #c4b5fd; }
+.knob-pip {
+  position: absolute;
+  top: 5px; left: 50%;
+  width: 3px; height: 8px;
+  background: #a78bfa;
+  border-radius: 2px;
+  transform: translateX(-50%);
+}
+.dial-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 12px;
+  padding: 0 4px;
+}
+.notch-label {
+  font-size: 9.5px;
+  font-family: 'Space Mono', monospace;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: center;
+  cursor: pointer;
+  line-height: 1.45;
+  padding: 4px 6px;
+  border-radius: 5px;
+  max-width: 110px;
+  transition: color 0.25s, background 0.25s;
+}
+.notch-label:nth-child(1) { text-align: left; }
+.notch-label:nth-child(4) { text-align: right; }
+.notch-label:hover { color: var(--text); background: var(--bg2); }
+.notch-label.active { color: var(--text); }
+.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 40px;
+  padding: 6px 16px;
+}
+.toggle-lbl {
+  font-size: 11px;
+  font-family: 'Space Mono', monospace;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  transition: color 0.2s;
+}
+.toggle-lbl.active { color: var(--text); }
+.toggle-pill {
+  width: 48px; height: 26px;
+  background: var(--bg3);
+  border: 1px solid var(--dim);
+  border-radius: 13px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.25s, border-color 0.25s;
+}
+.toggle-pill.on { background: linear-gradient(135deg,#7c3aed40,#2dd4bf40); border-color: #7c3aed; }
+.toggle-ball {
+  position: absolute;
+  top: 3px; left: 3px;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: transform 0.22s cubic-bezier(.34,1.56,.64,1), background 0.22s;
+}
+.toggle-pill.on .toggle-ball { transform: translateX(22px); background: #a78bfa; }
+
+/* ── EDITORIAL ── */
+.editorial-area {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 40px 28px;
+}
+.editorial {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 24px;
+}
+.ed-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.ed-badge {
+  font-size: 9px;
+  font-family: 'Space Mono', monospace;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #a78bfa;
+  background: rgba(167,139,250,0.1);
+  border: 1px solid rgba(167,139,250,0.25);
+  padding: 3px 8px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.ed-divider { flex:1; height:1px; background:var(--border); }
+.ed-lede {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text);
+  line-height: 1.6;
+  margin-bottom: 14px;
+}
+.ed-bullets { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.ed-bullet {
+  display: flex;
+  gap: 10px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.ed-arrow { color: #a78bfa; font-size: 11px; flex-shrink: 0; margin-top: 3px; }
+.ed-bullet b { color: var(--text); font-weight: 600; }
+
+/* ── CHART AREA ── */
+.chart-area {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 40px 72px;
+}
+
+/* Civil War grid */
+.cw-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+.cluster-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.cluster-head {
+  padding: 13px 16px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border-bottom: 1px solid var(--border);
+  font-size: 10px;
+  font-family: 'Space Mono', monospace;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+.c-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+
+/* Civil War expandable song items */
+.cw-song-item { border-bottom: 1px solid var(--border); }
+.cw-song-item:last-child { border-bottom: none; }
+.cw-song-item.open .cluster-row { background: var(--bg3); }
+.cluster-row {
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  gap: 11px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.cluster-row:hover { background: var(--bg3); }
+.c-rank {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  width: 18px;
+  text-align: right;
+  flex-shrink: 0;
+}
+.c-info { flex: 1; min-width: 0; }
+.c-title {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.c-artist {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 1px;
+}
+.c-bar-wrap { width: 48px; height: 3px; background: var(--bg3); border-radius: 2px; flex-shrink: 0; }
+.c-bar { height: 100%; border-radius: 2px; opacity: 0.7; }
+.c-vel { font-family: 'Space Mono', monospace; font-size: 10px; white-space: nowrap; flex-shrink: 0; }
+.c-chevron { font-size: 10px; color: var(--muted); flex-shrink: 0; transition: transform 0.2s; }
+.cw-song-item.open .c-chevron { transform: rotate(90deg); }
+
+/* Unified chart */
+.unified {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.chart-head-row {
+  display: grid;
+  grid-template-columns: 52px 1fr 110px 80px 72px;
+  padding: 11px 22px;
+  font-size: 9.5px;
+  font-family: 'Space Mono', monospace;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  gap: 14px;
+}
+.song-item { border-bottom: 1px solid var(--border); }
+.song-item:last-child { border-bottom: none; }
+.song-item.open .chart-row { background: var(--bg3); }
+.chart-row {
+  display: grid;
+  grid-template-columns: 52px 1fr 110px 80px 72px;
+  padding: 13px 22px;
+  gap: 14px;
+  align-items: center;
+  cursor: pointer;
+  transition: background 0.12s;
+  animation: rowIn 0.28s ease both;
+}
+.chart-row:hover { background: var(--bg3); }
+@keyframes rowIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.pos-cell { display: flex; align-items: center; gap: 6px; }
+.pos-num {
+  font-family: 'Space Mono', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+  min-width: 22px;
+  text-align: right;
+}
+.pos-num.gold   { color: #fbbf24; }
+.pos-num.silver { color: #94a3b8; }
+.pos-num.bronze { color: #c87533; }
+.pos-arrow { font-size: 9px; width: 12px; text-align: center; line-height: 1; }
+.up   { color: #22c55e; }
+.down { color: #f43f5e; }
+.same { color: var(--dim); }
+.song-cell { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.badge {
+  font-size: 8.5px;
+  font-family: 'Space Mono', monospace;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  padding: 3px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.song-text { min-width: 0; }
+.s-title { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.s-artist { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+.xover-cell { display: flex; align-items: center; gap: 7px; }
+.xover-track { flex:1; height:3px; background:var(--bg3); border-radius:2px; }
+.xover-fill { height:100%; background:linear-gradient(90deg,#7c3aed,#2dd4bf); border-radius:2px; }
+.xover-num { font-family:'Space Mono',monospace; font-size:9px; color:var(--muted); min-width:20px; text-align:right; }
+.metric-cell { font-family:'Space Mono',monospace; font-size:12px; text-align:right; color:var(--muted); }
+.metric-cell b { color:var(--text); font-weight:500; }
+.score-cell { display:flex; align-items:center; gap:6px; }
+.score-track { flex:1; height:3px; background:var(--bg3); border-radius:2px; }
+.score-fill  { height:100%; border-radius:2px; }
+
+/* ── EXPAND PANEL ── */
+.expand-panel {
+  display: none;
+  padding: 16px 22px 20px;
+  background: var(--bg3);
+  border-top: 1px solid var(--border);
+  animation: epIn 0.2s ease both;
+}
+@keyframes epIn { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:translateY(0)} }
+.song-item.open .expand-panel  { display: block; }
+.cw-song-item.open .expand-panel {
+  display: block;
+  padding: 12px 16px 14px;
+}
+
+.ep-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px 36px;
+}
+.ep-col-head {
+  font-size: 9px;
+  font-family: 'Space Mono', monospace;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+.platform-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 9px;
+}
+.platform-row:last-child { margin-bottom: 0; }
+.pl-name {
+  font-size: 11px;
+  font-family: 'Space Mono', monospace;
+  color: var(--muted);
+  width: 74px;
+  flex-shrink: 0;
+}
+.pl-track { flex:1; height:4px; background:var(--dim); border-radius:2px; overflow:hidden; }
+.pl-fill  { height:100%; border-radius:2px; }
+.pl-pct {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  width: 26px;
+  text-align: right;
+  flex-shrink: 0;
+}
+.subs-row { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+.sub-tag {
+  font-size: 9.5px;
+  font-family: 'Space Mono', monospace;
+  color: rgba(255,90,0,0.85);
+  background: rgba(255,69,0,0.08);
+  border: 1px solid rgba(255,69,0,0.2);
+  padding: 2px 7px;
+  border-radius: 3px;
+}
+.ep-note-label {
+  font-size: 9px;
+  font-family: 'Space Mono', monospace;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: #fbbf24;
+  margin-bottom: 7px;
+}
+.ep-note-text {
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+.ep-no-movement {
+  font-size: 13px;
+  color: var(--muted);
+  font-style: italic;
+  margin-bottom: 12px;
+}
+.ep-xover-note {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.55;
+}
+.ep-xover-note b { color: var(--text); font-weight: 600; }
+
+/* Compact expand for Civil War cards */
+.ep-compact .ep-layout { grid-template-columns: 1fr; gap: 12px; }
+
+/* Responsive */
+@media (max-width: 760px) {
+  header, .controls, .editorial-area, .chart-area { padding-left: 20px; padding-right: 20px; }
+  .cw-grid { grid-template-columns: repeat(2,1fr); }
+  .chart-head-row, .chart-row { grid-template-columns: 48px 1fr 68px; }
+  .chart-head-row > *:nth-child(3),
+  .chart-head-row > *:nth-child(4),
+  .chart-row > *:nth-child(3),
+  .chart-row > *:nth-child(4) { display: none; }
+  .ep-layout { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <div class="gate-box">
+    <div class="gate-logo">UNISON</div>
+    <div class="gate-input-row">
+      <input id="gate-input" type="password" placeholder="password" autocomplete="off" />
+      <button id="gate-btn" onclick="checkPassword()">ENTER</button>
+    </div>
+    <div id="gate-err">incorrect password</div>
+  </div>
+</div>
+
+<header>
+  <div class="logo">UNISON</div>
+  <div class="header-meta">
+    <div class="live-dot"></div>
+    Chart Lab &nbsp;·&nbsp; Week of May 18
+  </div>
+</header>
+
+<div class="controls">
+  <div class="mode-display">
+    <div class="mode-name" id="modeName">Civil War</div>
+    <div class="mode-desc" id="modeDesc">Each listening culture gets its own chart. No cross-pollination. The internet, sorted by tribe.</div>
+  </div>
+  <div class="dial-wrap">
+    <div class="dial-track-area" id="dialArea">
+      <div class="track-line"></div>
+      <div class="track-fill" id="trackFill"></div>
+      <div class="tick" id="tick0" style="left:0%"></div>
+      <div class="tick" id="tick1" style="left:33.3%"></div>
+      <div class="tick" id="tick2" style="left:66.7%"></div>
+      <div class="tick" id="tick3" style="left:100%"></div>
+      <div class="knob" id="knob"><div class="knob-pip"></div></div>
+    </div>
+    <div class="dial-labels">
+      <div class="notch-label active" id="lbl0" onclick="snapTo(0)">Civil<br>War</div>
+      <div class="notch-label"        id="lbl1" onclick="snapTo(1)">Oh Baby I<br>Like It Raw</div>
+      <div class="notch-label"        id="lbl2" onclick="snapTo(2)">Why Can't We<br>Be Friends</div>
+      <div class="notch-label"        id="lbl3" onclick="snapTo(3)">One Nation<br>Under a Groove</div>
+    </div>
+  </div>
+  <div class="toggle-row">
+    <span class="toggle-lbl active" id="lblTop">Top Charts</span>
+    <div class="toggle-pill" id="togglePill" onclick="flipMode()">
+      <div class="toggle-ball"></div>
+    </div>
+    <span class="toggle-lbl" id="lblTrend">Trending</span>
+  </div>
+</div>
+
+<div class="editorial-area"><div id="editorialArea"></div></div>
+<div class="chart-area" id="chartArea"></div>
+
+<script>
+// ── CLUSTERS ────────────────────────────────────────────────────────────
+const C = {
+  trap:    { name:'Trap & Drill',  color:'#ff4d6d', bg:'rgba(255,77,109,0.12)' },
+  indie:   { name:'Indie / Alt',   color:'#86efac', bg:'rgba(134,239,172,0.1)' },
+  latin:   { name:'Latin Urbano',  color:'#fbbf24', bg:'rgba(251,191,36,0.1)'  },
+  edm:     { name:'Electronic',    color:'#818cf8', bg:'rgba(129,140,248,0.1)' },
+  country: { name:'Country Core',  color:'#fcd34d', bg:'rgba(252,211,77,0.1)'  },
+  rnb:     { name:'R&B / Soul',    color:'#fb7185', bg:'rgba(251,113,133,0.1)' },
+};
+
+// ── SONGS ────────────────────────────────────────────────────────────────
+// Fields: id, title, artist, cl (cluster), s (streams M), m (mentions K),
+//         x (crossover 0-100), v (velocity %), p (platform scores [spotify,youtube,tiktok,reddit,twitter]),
+//         note (movement explanation), subs (reddit communities)
+const songs = [
+  // TRAP & DRILL
+  { id:1,  title:'Back on Road',      artist:'Lil Phantom',           cl:'trap',    s:8.2,  m:42, x:18, v:4,
+    p:[61,74,58,8,42] },
+  { id:2,  title:'Slide',             artist:'KD Makk',               cl:'trap',    s:11.5, m:67, x:12, v:-2,
+    p:[68,82,45,6,37] },
+  { id:3,  title:'Steppers',          artist:'Young Venom ft. Lucci', cl:'trap',    s:15.2, m:89, x:22, v:8,
+    p:[72,88,62,11,51] },
+  { id:4,  title:'No Lacking',        artist:'Drillz & Static',       cl:'trap',    s:6.8,  m:31, x:8,  v:15,
+    p:[53,71,78,9,44] },
+  { id:5,  title:'Blood Money',       artist:'Kay Flock Jr',          cl:'trap',    s:9.1,  m:54, x:14, v:-5,
+    p:[65,76,41,7,33] },
+  { id:6,  title:'Ghost Mode',        artist:'Smokescreen',           cl:'trap',    s:7.4,  m:28, x:6,  v:22,
+    p:[58,69,84,12,56],
+    note:'A DJ Khaled Instagram co-sign this week drove a surge almost entirely within Drill communities — TikTok spike confirms it, but the crossover signal remained flat.' },
+
+  // INDIE / ALT
+  { id:7,  title:'Lavender Static',   artist:'MAYE',                  cl:'indie',   s:4.2,  m:18, x:35, v:31,
+    p:[78,42,65,52,38], subs:['r/indieheads','r/listentothis'],
+    note:'Second week inside the #SummerDreaming TikTok trend; editorial pop playlist additions this week suggest it is crossing out of indie territory.' },
+  { id:8,  title:'Bedroom Architect', artist:'Clover',                cl:'indie',   s:3.8,  m:22, x:28, v:7,
+    p:[71,38,34,61,29], subs:['r/indieheads','r/bedroom_pop'] },
+  { id:9,  title:'Glass House',       artist:'Mira Soleil',           cl:'indie',   s:5.6,  m:31, x:42, v:3,
+    p:[74,45,38,48,33], subs:['r/indieheads','r/poppunkers'] },
+  { id:10, title:'Rust Belt Hymn',    artist:'The Western Fold',      cl:'indie',   s:2.9,  m:14, x:19, v:-8,
+    p:[62,31,14,72,21], subs:['r/folk','r/indieheads'] },
+  { id:11, title:'Ultraviolet',       artist:'Dasha Mira',            cl:'indie',   s:6.4,  m:38, x:55, v:18,
+    p:[82,54,61,44,48], subs:['r/indieheads','r/popheads','r/listentothis'],
+    note:'Rare indie artist appearing simultaneously on Pop Hits, Chill Vibes, and EDM Discovery playlists — editorial interest from all three Spotify curatorial teams this week.' },
+  { id:12, title:'New Noise',         artist:'Palms',                 cl:'indie',   s:3.1,  m:11, x:24, v:2,
+    p:[66,36,22,55,24], subs:['r/punk','r/indieheads'] },
+
+  // LATIN URBANO
+  { id:13, title:'Quédate',           artist:'Valentín Cruz',         cl:'latin',   s:16.8, m:94, x:38, v:12,
+    p:[88,91,77,14,45] },
+  { id:14, title:'Playa',             artist:'Remi & Bad Habits',     cl:'latin',   s:12.4, m:71, x:45, v:6,
+    p:[79,84,72,11,38] },
+  { id:15, title:'Noche Oscura',      artist:'La Fauna',              cl:'latin',   s:9.8,  m:52, x:26, v:-3,
+    p:[74,82,54,9,29] },
+  { id:16, title:'Fuego',             artist:'Mango Fuego ft. Yola',  cl:'latin',   s:14.2, m:82, x:52, v:19,
+    p:[81,88,91,18,56],
+    note:'A viral dance challenge this week seeded it across TikTok communities that rarely share playlists with each other, boosting its crossover coefficient by an estimated 8 points.' },
+  { id:17, title:'Sin Ti',            artist:'Casanova Cruz',         cl:'latin',   s:7.6,  m:39, x:31, v:4,
+    p:[68,75,58,8,31] },
+  { id:18, title:'Ritmo',             artist:'J-Vil',                 cl:'latin',   s:11.1, m:63, x:48, v:28,
+    p:[84,78,69,16,42],
+    note:'Major workout and running playlist pickups across Spotify drove streams from demographics well outside its Latin Urbano home base.' },
+
+  // ELECTRONIC
+  { id:19, title:'Fracture',          artist:'VOID',                  cl:'edm',     s:5.8,  m:24, x:32, v:9,
+    p:[71,56,48,35,33], subs:['r/electronicmusic','r/idm'] },
+  { id:20, title:'Cascade',           artist:'Neon Dusk',             cl:'edm',     s:8.9,  m:47, x:41, v:21,
+    p:[78,64,62,28,41], subs:['r/electronicmusic','r/edm'] },
+  { id:21, title:'Phase Shift',       artist:'Orbital Gardens',       cl:'edm',     s:4.3,  m:19, x:28, v:-4,
+    p:[64,58,33,44,26], subs:['r/idm','r/electronicmusic'] },
+  { id:22, title:'Bassline Prophet',  artist:'DJ Möbius',             cl:'edm',     s:7.2,  m:35, x:37, v:13,
+    p:[72,68,55,31,38], subs:['r/electronicmusic'] },
+  { id:23, title:'Weightless',        artist:'Aurora B',              cl:'edm',     s:11.4, m:68, x:62, v:5,
+    p:[84,71,74,22,48], subs:['r/electronicmusic','r/popheads'],
+    note:'Playlist coverage spans Dance, Pop Hits, and Chill categories in equal measure — the most editorially cross-placed Electronic track in the dataset.' },
+  { id:24, title:'Reverie',           artist:'GLASS',                 cl:'edm',     s:6.1,  m:29, x:44, v:35,
+    p:[77,62,88,38,52], subs:['r/electronicmusic','r/indieheads'],
+    note:'Featured in a major network TV drama trailer this week, generating Shazam spikes and first-time Spotify adds from audiences with zero prior EDM history.' },
+
+  // COUNTRY CORE
+  { id:25, title:'Gravel Road',       artist:'Tyler James',           cl:'country', s:9.4,  m:51, x:22, v:3,
+    p:[76,69,52,18,34] },
+  { id:26, title:'Whiskey Hours',     artist:'Lena Wade',             cl:'country', s:7.8,  m:43, x:18, v:-6,
+    p:[71,64,38,22,28] },
+  { id:27, title:'Hometown Ghost',    artist:'The Ramblers',          cl:'country', s:12.1, m:73, x:34, v:10,
+    p:[79,72,58,24,39] },
+  { id:28, title:'Southern Cross',    artist:'Colt Dixon',            cl:'country', s:6.2,  m:29, x:15, v:1,
+    p:[66,61,31,16,24] },
+  { id:29, title:'One Last Rodeo',    artist:'Sawdust',               cl:'country', s:8.5,  m:46, x:27, v:7,
+    p:[73,67,48,19,33] },
+  { id:30, title:'Wild',              artist:'Maya Rae',              cl:'country', s:14.8, m:88, x:49, v:24,
+    p:[84,74,78,28,52], subs:['r/country','r/rnb'],
+    note:"Maya Rae's collab with an R&B producer has introduced her to urban playlists for the first time — active on r/rnb and r/indieheads this week alongside her country fanbase." },
+
+  // R&B / SOUL
+  { id:31, title:'Slow Burn',         artist:'Aria Nova',             cl:'rnb',     s:13.6, m:79, x:44, v:8,
+    p:[81,68,74,19,44] },
+  { id:32, title:'Silk',              artist:'Melo',                  cl:'rnb',     s:10.2, m:59, x:38, v:2,
+    p:[76,62,68,14,38] },
+  { id:33, title:'Midnight Gospel',   artist:'Sunday Jones',          cl:'rnb',     s:8.7,  m:48, x:51, v:16,
+    p:[79,66,72,22,46], subs:['r/rnb','r/popheads'],
+    note:'Three consecutive weeks of radio adds across R&B, Pop, and Contemporary formats have compounded its reach well beyond the R&B/Soul cluster.' },
+  { id:34, title:'Tender',            artist:'Veil',                  cl:'rnb',     s:16.4, m:97, x:67, v:11,
+    p:[88,74,82,28,58], subs:['r/rnb','r/hiphopheads','r/indieheads','r/popheads'],
+    note:'The only track in this chart showing strong platform activity simultaneously across all six listening cultures — Reddit threads active in r/rnb, r/hiphopheads, r/indieheads, and r/popheads this week.' },
+  { id:35, title:'No Rush',           artist:'Camille Dupree',        cl:'rnb',     s:7.3,  m:36, x:33, v:-1,
+    p:[72,58,54,16,31] },
+  { id:36, title:'Afterglow',         artist:'Saint Ro',              cl:'rnb',     s:9.8,  m:54, x:58, v:29,
+    p:[83,71,79,24,52], subs:['r/rnb','r/hiphopheads'],
+    note:'Radio adds in three new markets this week; streams consistently across hip-hop, pop, and indie playlists with no single dominant home platform.' },
+];
+
+// ── SCORING ─────────────────────────────────────────────────────────────
+function rawScore(s)      { return s.s * 1000 + s.m * 8; }
+function xBoost(s)        { return (s.x / 100) * rawScore(s) * 2.2; }
+function topScore(s, t)   { return rawScore(s) * (1 - t * 0.78) + xBoost(s) * t; }
+function trendScore(s, t) {
+  const boost = s.v * (s.x / 100) * 3.2;
+  return s.v * (1 - t * 0.78) + boost * t;
+}
+
+// ── STATE ────────────────────────────────────────────────────────────────
+let dialPct  = 0;
+let trending = false;
+const openIds = new Set();
+
+function isCivilWar()  { return dialPct < 17; }
+function crossoverT()  { return dialPct < 33 ? 0 : (dialPct - 33) / 67; }
+
+const MODES = [
+  { name:'Civil War',
+    desc:'Each listening culture gets its own chart. No cross-pollination. The internet, sorted by tribe.',
+    color:'#f43f5e' },
+  { name:'Oh Baby I Like It Raw',
+    desc:'One chart, ranked by raw streams and mention counts alone. Volume is the only truth that matters here.',
+    color:'#fbbf24' },
+  { name:"Why Can't We Be Friends",
+    desc:'Half raw numbers, half crossover credit. Songs that travel across tribes start climbing the list.',
+    color:'#a78bfa' },
+  { name:'One Nation Under a Groove',
+    desc:'Maximum crossover weighting. Songs that genuinely bridge listening cultures rise to the very top.',
+    color:'#2dd4bf' },
+];
+
+function currentMode() {
+  if (dialPct < 17) return MODES[0];
+  if (dialPct < 50) return MODES[1];
+  if (dialPct < 84) return MODES[2];
+  return MODES[3];
+}
+
+// ── DIAL INTERACTION ─────────────────────────────────────────────────────
+const dialArea = document.getElementById('dialArea');
+const knob     = document.getElementById('knob');
+let dragging   = false;
+
+function pctFromX(clientX) {
+  const rect = dialArea.getBoundingClientRect();
+  return Math.max(0, Math.min(100, (clientX - rect.left) / rect.width * 100));
+}
+knob.addEventListener('mousedown', e => { dragging = true; knob.classList.add('dragging'); e.preventDefault(); });
+document.addEventListener('mousemove', e => { if (!dragging) return; dialPct = pctFromX(e.clientX); update(); });
+document.addEventListener('mouseup', () => { if (!dragging) return; dragging = false; knob.classList.remove('dragging'); snapToNearest(); });
+knob.addEventListener('touchstart', e => { dragging = true; knob.classList.add('dragging'); e.preventDefault(); }, { passive:false });
+document.addEventListener('touchmove', e => { if (!dragging) return; dialPct = pctFromX(e.touches[0].clientX); update(); }, { passive:true });
+document.addEventListener('touchend', () => { if (!dragging) return; dragging = false; knob.classList.remove('dragging'); snapToNearest(); });
+dialArea.addEventListener('click', e => {
+  if (e.target === knob || knob.contains(e.target)) return;
+  const pct = pctFromX(e.clientX);
+  if (pct < 20)      animateSnapTo(0);
+  else if (pct < 33) animateSnapTo(33);
+  else               { dialPct = pct; update(); }
+});
+
+const NOTCH_PCTS = [0, 33, 66.7, 100];
+function snapToNearest() {
+  if (dialPct < 20)      animateSnapTo(0);   // hard snap to Civil War
+  else if (dialPct < 33) animateSnapTo(33);  // step-jump to Raw if released in dead zone
+  // else: free stop — continuous range, no snap
+}
+function snapTo(idx) { animateSnapTo(NOTCH_PCTS[idx]); }
+function animateSnapTo(pct) {
+  const start = dialPct, end = pct, dur = 260, t0 = performance.now();
+  function step(now) {
+    const p = Math.min(1, (now-t0)/dur);
+    dialPct = start + (end-start) * (1 - Math.pow(1-p, 3));
+    update();
+    if (p < 1) requestAnimationFrame(step); else { dialPct = end; update(); }
+  }
+  requestAnimationFrame(step);
+}
+
+function flipMode() {
+  trending = !trending;
+  document.getElementById('togglePill').classList.toggle('on', trending);
+  document.getElementById('lblTop').classList.toggle('active', !trending);
+  document.getElementById('lblTrend').classList.toggle('active', trending);
+  update(true);
+}
+
+// ── UPDATE ────────────────────────────────────────────────────────────────
+let lastEdKey = '';
+function update() {
+  const mode = currentMode();
+  knob.style.left = dialPct + '%';
+  document.getElementById('trackFill').style.width = dialPct + '%';
+  NOTCH_PCTS.forEach((p,i) => {
+    const el = document.getElementById('tick'+i);
+    el.className = 'tick' + (dialPct >= p-1 ? ' reached' : '');
+    if (Math.abs(dialPct-p) < 3) el.classList.add('active');
+    document.getElementById('lbl'+i).classList.toggle('active', Math.abs(dialPct-p) < 17);
+  });
+  document.getElementById('modeName').textContent = mode.name;
+  document.getElementById('modeName').style.color = mode.color;
+  document.getElementById('modeDesc').textContent = mode.desc;
+
+  // Editorial only updates when mode or toggle changes
+  const edKey = currentMode().name + '|' + trending;
+  if (edKey !== lastEdKey) { lastEdKey = edKey; renderEditorial(); }
+
+  renderChart();
+}
+
+// ── EDITORIAL ─────────────────────────────────────────────────────────────
+function generateEditorial() {
+  const t = crossoverT();
+
+  if (isCivilWar() && !trending) {
+    return {
+      lede: "Six cultures. Six charts. No negotiation.",
+      bullets: [
+        "<b>Quédate</b> by Valentín Cruz leads all clusters in raw streams at 16.8M — but its audience shares almost no playlists with the R&B or Electronic leaders.",
+        "<b>Tender</b> by Veil leads R&B with a dataset-high 67% crossover score. In Civil War mode, that number is completely invisible.",
+        "<b>Wild</b> by Maya Rae leads Country Core at 14.8M. Her active crossover into R&B playlists this week goes unacknowledged here.",
+        "<b>Steppers</b> by Young Venom ft. Lucci holds Trap's #1 at 15.2M — a massive number that coexists with the Latin and R&B leaders without intersecting them.",
+      ]
+    };
+  }
+  if (isCivilWar() && trending) {
+    return {
+      lede: "Velocity by tribe. The next wave, sorted by where it's forming.",
+      bullets: [
+        "<b>Reverie</b> by GLASS leads all velocity at +35% after a TV trailer placement drove Shazam spikes — but the activity hasn't escaped EDM contexts yet.",
+        "<b>Lavender Static</b> by MAYE is Indie's breakout story at +31%, catching a TikTok trend that's pulling it toward pop audiences for the first time.",
+        "<b>Afterglow</b> by Saint Ro leads R&B at +29% with radio adds in three new markets — one of several tracks generating energy beyond its home cluster.",
+        "<b>Ghost Mode</b> by Smokescreen (+22%) is Trap's velocity leader, driven by a DJ Khaled co-sign that circulated exclusively within Drill communities.",
+      ]
+    };
+  }
+
+  // Unified modes — compute dynamically
+  const scored = songs
+    .map(s => ({ ...s, score: trending ? trendScore(s, t) : topScore(s, t) }))
+    .sort((a,b) => b.score - a.score)
+    .slice(0, 20);
+  const rawScored = songs
+    .map(s => ({ ...s, rscore: trending ? s.v : rawScore(s) }))
+    .sort((a,b) => b.rscore - a.rscore);
+
+  // Rank lookup
+  const newRankOf = id => scored.findIndex(s => s.id === id) + 1;
+  const oldRankOf = id => rawScored.findIndex(s => s.id === id) + 1;
+
+  const top1 = scored[0];
+  const bullets = [];
+
+  // #1 context
+  if (top1.note) {
+    bullets.push(`<b>${top1.title}</b> by ${top1.artist} holds #1. ${top1.note}`);
+  } else {
+    const metric = trending ? `+${top1.v}% velocity` : `${top1.s}M streams`;
+    bullets.push(`<b>${top1.title}</b> by ${top1.artist} leads at #1 — ${metric} and ${top1.x}% crossover reach.`);
+  }
+
+  // Notable risers
+  scored.forEach((song, i) => {
+    if (bullets.length >= 4 || i === 0) return;
+    const rise = oldRankOf(song.id) - (i + 1);
+    if (rise >= 5 && i < 12) {
+      const core = song.note
+        ? `<b>${song.title}</b> by ${song.artist} rises ${rise} spots to #${i+1}. ${song.note}`
+        : `<b>${song.title}</b> by ${song.artist} climbs ${rise} spots to #${i+1} — its ${song.x}% crossover score gaining significant weight at this dial setting.`;
+      bullets.push(core);
+    }
+  });
+
+  // Notable fallers from raw top 8
+  rawScored.slice(0, 8).forEach(song => {
+    if (bullets.length >= 4) return;
+    const nr = newRankOf(song.id);
+    const fall = nr - oldRankOf(song.id);
+    if (fall >= 5 && nr >= 1) {
+      bullets.push(`<b>${song.title}</b> by ${song.artist} drops to #${nr} — a ${song.x}% crossover score limits its reach as the dial shifts away from raw volume.`);
+    }
+  });
+
+  // Fill with a note-bearing song we haven't mentioned
+  if (bullets.length < 4) {
+    const extra = scored.find(s => s.note && !bullets.some(b => b.includes(s.title)));
+    if (extra) {
+      const nr = newRankOf(extra.id);
+      bullets.push(`<b>${extra.title}</b> by ${extra.artist} at #${nr}. ${extra.note}`);
+    }
+  }
+
+  // Mode-specific lede
+  let lede;
+  if (!trending) {
+    if (t < 0.05) lede = "No weighting, no narrative — just streams and mentions. Volume is the only variable in the room.";
+    else if (t < 0.35) lede = "Crossover credit is beginning to register. Watch the R&B and Latin artists with strong bridge scores start to climb.";
+    else if (t < 0.75) lede = "The chart is separating. Artists who live in multiple listening cultures are pulling away from single-cluster dominators.";
+    else lede = `Crossover is everything here. <b>${top1.title}</b> by ${top1.artist} reaches #1 because it genuinely lives in more than one world.`;
+  } else {
+    if (t < 0.05) lede = "Pure momentum. The fastest-moving tracks this week, sorted by nothing but velocity.";
+    else if (t < 0.35) lede = "Velocity plus crossover is beginning to compound — tracks rising fast AND bridging communities are starting to separate.";
+    else if (t < 0.75) lede = "Community bridges are velocity multipliers now. Artists moving fastest across culture are pulling away from cluster-specific risers.";
+    else lede = "The fastest-moving artists who also span the most communities. This is where the next cross-cultural moment lives.";
+  }
+
+  return { lede, bullets: bullets.slice(0, 4) };
+}
+
+function renderEditorial() {
+  const { lede, bullets } = generateEditorial();
+  const bulletHtml = bullets.map(b =>
+    `<li class="ed-bullet"><span class="ed-arrow">→</span><span>${b}</span></li>`
+  ).join('');
+  document.getElementById('editorialArea').innerHTML = `
+    <div class="editorial">
+      <div class="ed-head">
+        <div class="ed-badge">AI Editorial</div>
+        <div class="ed-divider"></div>
+      </div>
+      <p class="ed-lede">${lede}</p>
+      <ul class="ed-bullets">${bulletHtml}</ul>
+    </div>`;
+}
+
+// ── EXPAND / COLLAPSE ────────────────────────────────────────────────────
+function toggleExpand(id, prefix) {
+  const el = document.getElementById((prefix||'si') + '-' + id);
+  if (!el) return;
+  const isOpen = el.classList.contains('open');
+  if (isOpen) { el.classList.remove('open'); openIds.delete(id); }
+  else         { el.classList.add('open');    openIds.add(id);    }
+}
+
+function restoreOpen(prefix) {
+  openIds.forEach(id => {
+    const el = document.getElementById((prefix||'si') + '-' + id);
+    if (el) el.classList.add('open');
+  });
+}
+
+// ── PLATFORM HTML ────────────────────────────────────────────────────────
+const PL_DEFS = [
+  { name:'Spotify',    color:'#1db95488' },
+  { name:'YouTube',    color:'#ff444488' },
+  { name:'TikTok',     color:'#00d4d488' },
+  { name:'Reddit',     color:'#ff5a1f88' },
+  { name:'Twitter/X',  color:'#8888aa88' },
+];
+
+function platformHtml(song) {
+  return PL_DEFS.map((pl, i) => `
+    <div class="platform-row">
+      <div class="pl-name">${pl.name}</div>
+      <div class="pl-track"><div class="pl-fill" style="width:${song.p[i]}%;background:${pl.color}"></div></div>
+      <div class="pl-pct">${song.p[i]}</div>
+    </div>`).join('');
+}
+
+function expandHtml(song, compact) {
+  const subsHtml = (song.subs||[]).map(s => `<span class="sub-tag">${s}</span>`).join('');
+  const noteHtml = song.note
+    ? `<div class="ep-note-label">This Week</div><div class="ep-note-text">${song.note}</div>`
+    : `<div class="ep-no-movement">No significant movement this week.</div>`;
+  const xDesc = song.x > 60 ? 'Actively streaming across multiple distinct listening communities.'
+    : song.x > 40 ? 'Meaningful presence in 2–3 different listening communities.'
+    : song.x > 25 ? 'Some crossover activity, primarily concentrated within its home cluster.'
+    : 'Highly concentrated within its home listening community.';
+
+  return `<div class="expand-panel" id="ep-${song.id}">
+    <div class="ep-layout${compact ? ' ep-compact' : ''}">
+      <div>
+        <div class="ep-col-head">Platform Energy</div>
+        ${platformHtml(song)}
+        ${subsHtml ? `<div class="subs-row">${subsHtml}</div>` : ''}
+      </div>
+      <div>
+        ${noteHtml}
+        <div class="ep-xover-note">Crossover reach: <b>${song.x}/100</b> — ${xDesc}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────
+function renderChart() {
+  const el = document.getElementById('chartArea');
+  if (isCivilWar()) renderCivilWar(el);
+  else renderUnified(el);
+}
+
+function renderCivilWar(el) {
+  const sortFn = trending ? (a,b) => b.v-a.v : (a,b) => b.s-a.s;
+  let html = '<div class="cw-grid">';
+  for (const key of Object.keys(C)) {
+    const cl = C[key];
+    const rows = songs.filter(s => s.cl === key).sort(sortFn);
+    const max = trending ? Math.max(...rows.map(s=>Math.abs(s.v))) : Math.max(...rows.map(s=>s.s));
+    html += `<div class="cluster-card">
+      <div class="cluster-head" style="color:${cl.color}">
+        <div class="c-dot" style="background:${cl.color}"></div>${cl.name}
+        ${trending ? '<span style="margin-left:auto;font-size:8px;color:var(--muted);letter-spacing:1px">VELOCITY</span>' : ''}
+      </div>`;
+    rows.forEach((song, i) => {
+      const barW = (Math.abs(trending ? song.v : song.s) / max * 100).toFixed(0);
+      const velColor = song.v >= 0 ? '#22c55e' : '#f43f5e';
+      const metric = trending
+        ? `<div class="c-vel" style="color:${velColor}">${song.v>0?'+':''}${song.v}%</div>`
+        : `<div class="c-bar-wrap"><div class="c-bar" style="width:${barW}%;background:${cl.color}"></div></div>`;
+      const hasNote = !!song.note;
+      html += `<div class="cw-song-item" id="cwsi-${song.id}">
+        <div class="cluster-row" onclick="toggleExpand(${song.id},'cwsi')">
+          <div class="c-rank">${i+1}</div>
+          <div class="c-info">
+            <div class="c-title">${song.title}</div>
+            <div class="c-artist">${song.artist}</div>
+          </div>
+          ${metric}
+          <div class="c-chevron">${hasNote ? '●' : '›'}</div>
+        </div>
+        ${expandHtml(song, true)}
+      </div>`;
+    });
+    html += '</div>';
+  }
+  html += '</div>';
+  el.innerHTML = html;
+  restoreOpen('cwsi');
+}
+
+function renderUnified(el) {
+  const t = crossoverT();
+  const scored = songs
+    .map(s => ({ ...s, score: trending ? trendScore(s, t) : topScore(s, t) }))
+    .sort((a,b) => b.score - a.score).slice(0, 20);
+  const rawOrder = songs
+    .map(s => ({ id:s.id, score: trending ? s.v : rawScore(s) }))
+    .sort((a,b) => b.score - a.score).map(s => s.id);
+  const maxScore = scored[0].score;
+  const metricHeader = trending ? 'Velocity' : 'Streams';
+
+  let html = `<div class="unified">
+    <div class="chart-head-row">
+      <div>#</div><div>Song</div>
+      <div>Crossover</div><div>${metricHeader}</div><div>Score</div>
+    </div>`;
+
+  scored.forEach((song, i) => {
+    const rank = i + 1;
+    const cl = C[song.cl];
+    const posClass = rank===1 ? 'gold' : rank===2 ? 'silver' : rank===3 ? 'bronze' : '';
+    const delta = (rawOrder.indexOf(song.id)+1) - rank;
+    const arrowHtml = t < 0.04   ? `<span class="pos-arrow same">—</span>`
+                    : delta > 0  ? `<span class="pos-arrow up">▲</span>`
+                    : delta < 0  ? `<span class="pos-arrow down">▼</span>`
+                    :              `<span class="pos-arrow same">—</span>`;
+    const metricVal = trending
+      ? `<b style="color:${song.v>=0?'#22c55e':'#f43f5e'}">${song.v>=0?'+':''}${song.v}%</b>`
+      : `<b>${song.s.toFixed(1)}M</b>`;
+    const scoreW = (song.score / maxScore * 100).toFixed(1);
+    const hasNote = !!song.note;
+
+    html += `<div class="song-item" id="si-${song.id}">
+      <div class="chart-row" style="animation-delay:${(i*0.018).toFixed(3)}s" onclick="toggleExpand(${song.id},'si')">
+        <div class="pos-cell">
+          <div class="pos-num ${posClass}">${rank}</div>${arrowHtml}
+        </div>
+        <div class="song-cell">
+          <div class="badge" style="background:${cl.bg};color:${cl.color}">${cl.name}</div>
+          <div class="song-text">
+            <div class="s-title">${song.title}${hasNote ? ' <span style="color:#fbbf24;font-size:10px;vertical-align:middle">●</span>' : ''}</div>
+            <div class="s-artist">${song.artist}</div>
+          </div>
+        </div>
+        <div class="xover-cell">
+          <div class="xover-track"><div class="xover-fill" style="width:${song.x}%"></div></div>
+          <div class="xover-num">${song.x}</div>
+        </div>
+        <div class="metric-cell">${metricVal}</div>
+        <div class="score-cell">
+          <div class="score-track">
+            <div class="score-fill" style="width:${scoreW}%;background:linear-gradient(90deg,${cl.color}66,${cl.color})"></div>
+          </div>
+        </div>
+      </div>
+      ${expandHtml(song, false)}
+    </div>`;
+  });
+
+  html += '</div>';
+  el.innerHTML = html;
+  restoreOpen('si');
+}
+
+// ── PASSWORD GATE ─────────────────────────────────────────────────────────
+function checkPassword() {
+  if (document.getElementById('gate-input').value.toLowerCase().trim() === 'civilwar') {
+    const gate = document.getElementById('gate');
+    gate.style.transition = 'opacity 0.4s ease';
+    gate.style.opacity = '0';
+    setTimeout(() => gate.remove(), 400);
+    sessionStorage.setItem('unison_auth', '1');
+  } else {
+    const err = document.getElementById('gate-err');
+    const input = document.getElementById('gate-input');
+    err.classList.add('show');
+    input.value = '';
+    input.focus();
+    setTimeout(() => err.classList.remove('show'), 2000);
+  }
+}
+document.getElementById('gate-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') checkPassword();
+});
+if (sessionStorage.getItem('unison_auth') === '1') {
+  document.getElementById('gate').remove();
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+update();
+</script>
+</body>
+</html>
