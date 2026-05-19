@@ -248,6 +248,16 @@ header {
 .notch-label:nth-child(4) { text-align: right; }
 .notch-label:hover { color: var(--text); background: var(--bg2); }
 .notch-label.active { color: var(--text); }
+.yt-link {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 9px;
+  color: var(--muted);
+  text-decoration: none;
+  opacity: 0.5;
+  transition: opacity 0.2s, color 0.2s;
+}
+.yt-link:hover { color: #ff4444; opacity: 1; }
 .toggle-row {
   display: flex;
   align-items: center;
@@ -630,10 +640,10 @@ header {
       <div class="knob" id="knob"><div class="knob-pip"></div></div>
     </div>
     <div class="dial-labels">
-      <div class="notch-label active" id="lbl0" onclick="snapTo(0)">Civil<br>War</div>
-      <div class="notch-label"        id="lbl1" onclick="snapTo(1)">Oh Baby I<br>Like It Raw</div>
-      <div class="notch-label"        id="lbl2" onclick="snapTo(2)">Why Can't We<br>Be Friends</div>
-      <div class="notch-label"        id="lbl3" onclick="snapTo(3)">One Nation<br>Under a Groove</div>
+      <div class="notch-label active" id="lbl0" onclick="snapTo(0)">Civil<br>War<br><a class="yt-link" href="https://www.youtube.com/watch?v=ql0lUqbQtn4" target="_blank" onclick="event.stopPropagation()">▶</a></div>
+      <div class="notch-label"        id="lbl1" onclick="snapTo(1)">Oh Baby I<br>Like It Raw<br><a class="yt-link" href="https://www.youtube.com/watch?v=TNDs-4T-Q84" target="_blank" onclick="event.stopPropagation()">▶</a></div>
+      <div class="notch-label"        id="lbl2" onclick="snapTo(2)">Why Can't We<br>Be Friends<br><a class="yt-link" href="https://www.youtube.com/watch?v=sH0Qda32IKM" target="_blank" onclick="event.stopPropagation()">▶</a></div>
+      <div class="notch-label"        id="lbl3" onclick="snapTo(3)">One Nation<br>Under a Groove<br><a class="yt-link" href="https://www.youtube.com/watch?v=pNoj-PZbcO8" target="_blank" onclick="event.stopPropagation()">▶</a></div>
     </div>
   </div>
   <div class="toggle-row">
