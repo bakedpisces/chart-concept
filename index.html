@@ -421,6 +421,48 @@ header {
 .c-chevron { font-size: 10px; color: var(--muted); flex-shrink: 0; transition: transform 0.2s; }
 .cw-song-item.open .c-chevron { transform: rotate(90deg); }
 
+/* Cluster info button + description */
+.cl-info-btn {
+  margin-left: auto;
+  font-size: 11px;
+  font-family: 'Space Mono', monospace;
+  color: var(--muted);
+  background: none;
+  border: 1px solid var(--dim);
+  border-radius: 3px;
+  padding: 1px 6px;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: color 0.2s, border-color 0.2s;
+  flex-shrink: 0;
+}
+.cl-info-btn:hover { color: var(--text); border-color: var(--muted); }
+.cl-info-btn.active { color: var(--text); border-color: var(--muted); }
+.cluster-desc {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg3);
+  animation: epIn 0.2s ease both;
+}
+.cl-desc-tag {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.cl-desc-attrs { display: flex; flex-direction: column; gap: 7px; }
+.cl-desc-attr { display: flex; gap: 10px; align-items: baseline; font-size: 12px; }
+.cl-desc-attr-label {
+  font-size: 8.5px;
+  font-family: 'Space Mono', monospace;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+  width: 64px;
+}
+.cl-desc-attr-value { color: var(--text); line-height: 1.5; }
+
 /* Unified chart */
 .unified {
   background: var(--bg2);
@@ -590,16 +632,55 @@ header {
 /* Compact expand for Civil War cards */
 .ep-compact .ep-layout { grid-template-columns: 1fr; gap: 12px; }
 
+/* Cluster jump nav — mobile only */
+.cw-jump-nav {
+  display: none;
+}
+
 /* Responsive */
 @media (max-width: 760px) {
   header, .controls, .editorial-area, .chart-area { padding-left: 20px; padding-right: 20px; }
-  .cw-grid { grid-template-columns: repeat(2,1fr); }
+  .cw-grid { grid-template-columns: 1fr; }
   .chart-head-row, .chart-row { grid-template-columns: 48px 1fr 68px; }
   .chart-head-row > *:nth-child(3),
   .chart-head-row > *:nth-child(4),
   .chart-row > *:nth-child(3),
   .chart-row > *:nth-child(4) { display: none; }
   .ep-layout { grid-template-columns: 1fr; }
+
+  .cw-jump-nav {
+    display: block;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 10px 0;
+    margin: 0 -20px 16px;
+  }
+  .cw-jump-nav::-webkit-scrollbar { display: none; }
+  .cw-jump-nav-inner {
+    display: flex;
+    gap: 8px;
+    padding: 0 20px;
+    width: max-content;
+  }
+  .cw-jump-pill {
+    font-size: 10px;
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 0.5px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1px solid;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .cw-jump-pill:active { opacity: 0.7; }
+  .cluster-card { scroll-margin-top: 56px; }
 }
 </style>
 </head>
@@ -661,12 +742,62 @@ header {
 <script>
 // ── CLUSTERS ────────────────────────────────────────────────────────────
 const C = {
-  trap:    { name:'Trap & Drill',  color:'#ff4d6d', bg:'rgba(255,77,109,0.12)' },
-  indie:   { name:'Indie / Alt',   color:'#86efac', bg:'rgba(134,239,172,0.1)' },
-  latin:   { name:'Latin Urbano',  color:'#fbbf24', bg:'rgba(251,191,36,0.1)'  },
-  edm:     { name:'Electronic',    color:'#818cf8', bg:'rgba(129,140,248,0.1)' },
-  country: { name:'Country Core',  color:'#fcd34d', bg:'rgba(252,211,77,0.1)'  },
-  rnb:     { name:'R&B / Soul',    color:'#fb7185', bg:'rgba(251,113,133,0.1)' },
+  trap: {
+    name:'Trap & Drill', color:'#ff4d6d', bg:'rgba(255,77,109,0.12)',
+    tag: 'The Blocks',
+    attrs: [
+      { label:'Genres',    value:'Trap, Drill, Melodic Rap, Gangsta Rap' },
+      { label:'Age',       value:'16–28' },
+      { label:'Geography', value:'Urban corridors — Atlanta, Chicago, NYC, South London' },
+      { label:'Platforms', value:'YouTube · TikTok · SoundCloud' },
+    ],
+  },
+  indie: {
+    name:'Indie / Alt', color:'#86efac', bg:'rgba(134,239,172,0.1)',
+    tag: 'Silver Lake / Bushwick',
+    attrs: [
+      { label:'Genres',    value:'Indie Rock, Bedroom Pop, Lo-fi, Alt-Folk, Indie Pop' },
+      { label:'Geography', value:'Coastal metros, college towns' },
+      { label:'Platforms', value:'Spotify · Reddit · Bandcamp' },
+    ],
+  },
+  latin: {
+    name:'Latin Urbano', color:'#fbbf24', bg:'rgba(251,191,36,0.1)',
+    tag: 'The Diaspora',
+    attrs: [
+      { label:'Genres',    value:'Reggaeton, Trap Latino, Bachata, Cumbia, Dembow' },
+      { label:'Geography', value:'Miami, NYC, LA, Houston + LatAm streaming markets' },
+      { label:'Platforms', value:'YouTube · TikTok · WhatsApp peer sharing' },
+    ],
+  },
+  edm: {
+    name:'Electronic', color:'#818cf8', bg:'rgba(129,140,248,0.1)',
+    tag: 'Club Kids & Producers',
+    attrs: [
+      { label:'Genres',    value:'House, Techno, Future Bass, Ambient, Drum & Bass' },
+      { label:'Age',       value:'20–34' },
+      { label:'Gender',    value:'Male-skewing (producer & festival culture)' },
+      { label:'Platforms', value:'Spotify · SoundCloud · Reddit' },
+    ],
+  },
+  country: {
+    name:'Country Core', color:'#fcd34d', bg:'rgba(252,211,77,0.1)',
+    tag: 'Truck & Boots',
+    attrs: [
+      { label:'Genres',    value:'Country, Country Pop, Americana, Bluegrass' },
+      { label:'Geography', value:'Rural & suburban — Southeast, Midwest, Mountain West' },
+      { label:'Platforms', value:'Spotify · Apple Music · Terrestrial radio' },
+    ],
+  },
+  rnb: {
+    name:'R&B / Soul', color:'#fb7185', bg:'rgba(251,113,133,0.1)',
+    tag: 'The Taste-Makers',
+    attrs: [
+      { label:'Genres',    value:'R&B, Soul, Neo-Soul, Contemporary R&B' },
+      { label:'Platforms', value:'Spotify · TikTok (outsized) · Apple Music' },
+      { label:'Identity',  value:'Primary driver of mainstream crossover' },
+    ],
+  },
 };
 
 // ── SONGS ────────────────────────────────────────────────────────────────
@@ -783,6 +914,7 @@ function trendScore(s, t) {
 let dialPct  = 0;
 let trending = false;
 const openIds = new Set();
+const openClusterInfo = new Set();
 
 function isCivilWar()  { return dialPct < 17; }
 function crossoverT()  { return dialPct < 33 ? 0 : (dialPct - 33) / 67; }
@@ -996,6 +1128,14 @@ function renderEditorial() {
     </div>`;
 }
 
+// ── CLUSTER INFO TOGGLE ───────────────────────────────────────────────────
+function toggleClInfo(key, e) {
+  e.stopPropagation();
+  if (openClusterInfo.has(key)) openClusterInfo.delete(key);
+  else openClusterInfo.add(key);
+  renderChart();
+}
+
 // ── EXPAND / COLLAPSE ────────────────────────────────────────────────────
 function toggleExpand(id, prefix) {
   const el = document.getElementById((prefix||'si') + '-' + id);
@@ -1062,18 +1202,41 @@ function renderChart() {
   else renderUnified(el);
 }
 
+function scrollToCluster(key) {
+  const el = document.getElementById('cwcard-' + key);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
 function renderCivilWar(el) {
   const sortFn = trending ? (a,b) => b.v-a.v : (a,b) => b.s-a.s;
-  let html = '<div class="cw-grid">';
+
+  const jumpNav = `<div class="cw-jump-nav"><div class="cw-jump-nav-inner">
+    ${Object.entries(C).map(([key, cl]) =>
+      `<div class="cw-jump-pill" style="color:${cl.color};border-color:${cl.color}55;background:${cl.bg}" onclick="scrollToCluster('${key}')">${cl.tag}</div>`
+    ).join('')}
+  </div></div>`;
+
+  let html = jumpNav + '<div class="cw-grid">';
   for (const key of Object.keys(C)) {
     const cl = C[key];
     const rows = songs.filter(s => s.cl === key).sort(sortFn);
     const max = trending ? Math.max(...rows.map(s=>Math.abs(s.v))) : Math.max(...rows.map(s=>s.s));
-    html += `<div class="cluster-card">
+    const infoOpen = openClusterInfo.has(key);
+    html += `<div class="cluster-card" id="cwcard-${key}">
       <div class="cluster-head" style="color:${cl.color}">
-        <div class="c-dot" style="background:${cl.color}"></div>${cl.name}
+        <div class="c-dot" style="background:${cl.color}"></div>${cl.tag}
         ${trending ? '<span style="margin-left:auto;font-size:8px;color:var(--muted);letter-spacing:1px">VELOCITY</span>' : ''}
-      </div>`;
+        <button class="cl-info-btn${infoOpen ? ' active' : ''}" onclick="toggleClInfo('${key}', event)">${infoOpen ? '×' : 'ⓘ'}</button>
+      </div>
+      ${infoOpen ? `<div class="cluster-desc">
+        <div class="cl-desc-tag" style="color:${cl.color}">${cl.tag}</div>
+        <div class="cl-desc-attrs">
+          ${cl.attrs.map(a => `<div class="cl-desc-attr">
+            <div class="cl-desc-attr-label">${a.label}</div>
+            <div class="cl-desc-attr-value">${a.value}</div>
+          </div>`).join('')}
+        </div>
+      </div>` : ''}`;
     rows.forEach((song, i) => {
       const barW = (Math.abs(trending ? song.v : song.s) / max * 100).toFixed(0);
       const velColor = song.v >= 0 ? '#22c55e' : '#f43f5e';
